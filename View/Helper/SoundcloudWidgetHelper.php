@@ -91,7 +91,6 @@ class SoundcloudWidgetHelper extends AppHelper {
     $data = $this->_getApiData($url, $playerVars);
     if (!empty($data))
     {
-      debug($data);
       if (!isset($iframeOpts['height']) && isset($data['height']))
       {
         $iframeOpts['height'] = $data['height'];
