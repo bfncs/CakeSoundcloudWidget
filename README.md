@@ -48,7 +48,7 @@ Where `$url` is a valid Soundcloud URL (i.e. `http://soundcloud.com/forss/flicke
 
 Additionaly, you can add custom options for the current Player by passing an array iFrame options (as you would pass it as the third argument `$options` to the (`HtmlHelper::tag()`)[http://api20.cakephp.org/class/html-helper#method-HtmlHelpertag] function) as second argument and an array of [parameters for the player](http://developers.soundcloud.com/docs/html5-widget#widget-params) as third argument:
 
-    $this->Youtube->iframe($url, array('width' => 640), array('show_artwork' => 'false'));
+    $this->Soundcloud->widget($url, array('width' => 640), array('show_artwork' => 'false'));
 
 ## License
 
