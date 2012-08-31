@@ -73,8 +73,8 @@ class SoundcloudWidgetHelper extends AppHelper {
  *
  */
   public function __destruct(){
-    if(!empty($this->curl)){
-      curl_close($this->curl);
+    if(gettype($this->_ch) == 'resource'){
+      curl_close($this->_ch);
     }
   }
 
@@ -88,9 +88,84 @@ class SoundcloudWidgetHelper extends AppHelper {
  */
   public function widget($url = null, $iframeOpts = array(), $playerVars = array())
   {
+    $data = $this->_getApiData($url, $playerVars);
+    if (!empty($data))
+    {
+      debug($data);
+      if (!isset($iframeOpts['height']) && isset($data['height']))
+      {
+        $iframeOpts['height'] = $data['height'];
+      }
+      if (isset($data['html']) && !empty($data['html']))
+      {
+        $src = $this->_buildSrc($this->_getHtmlAttribute('src', $data['html']), $playerVars);
+        $iframeOpts = array_merge($this->_iframeOpts, $iframeOpts);
+        $iframeOpts['src'] = $src;
+        return $this->Html->tag('iframe', '', $iframeOpts);
+      }
+    }
+    return '';
+  }
+
+/**
+ * Build soundcloud link with additional data for iframe
+ *
+ * @param string $url Soundcloud URL
+ * @param array $playerVars Options for player
+ * @access public
+ */
+  public function link($content, $url = null, $playerVars = array(), $linkOptions = array())
+  {
+    $data = $this->_getApiData($url, $playerVars);
+    if (!empty($data))
+    {
+      if (isset($data['html']) && !empty($data['html']))
+      {
+        $src = $this->_buildSrc($this->_getHtmlAttribute('src', $data['html']), $playerVars);
+        $linkOptions = array_merge(array(
+          'escape' => false,
+          'target' => '_blank',
+          'data-ifrsrc' => $src,
+          'data-ifrheight' => $data['height'],
+        ), $linkOptions);
+        return $this->Html->link($content, $url, $linkOptions);
+      }
+    }
+  }
+
+/**
+ * Get thumbnail for a url
+ *
+ * @param string $url Soundcloud URL
+ * @param array $options Image options
+ * @access public
+ */
+  public function thumbnail($url = null, $options = array())
+  {
+    $data = $this->_getApiData($url);
+    if (!empty($data))
+    {
+      if (isset($data['thumbnail_url']) && !empty($data['thumbnail_url']))
+      {
+        return $this->Html->image($data['thumbnail_url'], $options);
+      }
+    }
+    return '';
+  }
+
+
+/**
+ * Get Api Data needed for iframe from soundcloud
+ *
+ * @param string $url Soundcloud URL
+ * @param array $playerVars Options for player
+ * @access public
+ */
+  private function _getApiData($url = null, $playerVars = array())
+  {
     if ($url == null || !is_string($url))
     {
-      return '';
+      return null;
     }
     $oembedParams = array_merge($this->_oembedParams, array(
       'url' => $url,
@@ -110,38 +185,23 @@ class SoundcloudWidgetHelper extends AppHelper {
     }
     if (!empty($data))
     {
-      $data = json_decode($data, true);
-      if (!isset($iframeOpts['height']) &&
-        isset($data['height']))
-      {
-        $iframeOpts['height'] = $data['height'];
-      }
-      if (isset($data['html']) &&
-        !empty($data['html']))
-      {
-        $src = $this->_getHtmlAttribute('src', $data['html']);
-        return $this->_buildPlayer($src, $iframeOpts, $playerVars);
-      }
+      return json_decode($data, true);
     }
-    return '';
+    return null;
   }
 
 /**
- * Build Player
+ * Build iframe src
  *
  * @param string $url oEmbed Player Url
- * @param array $iframeOpts Options for iframe
  * @param array $playerVars Options for player
  */
-  private function _buildPlayer($url = null, $iframeOpts = array(), $playerVars = array())
+  private function _buildSrc($url = null, $playerVars = array())
   {
     $url = parse_url($url);
     parse_str($url['query'], $params);
     $params = array_merge($params, array_merge($this->_playerVars, $playerVars));
-    $src = $url['scheme'] . '://' . $url['host'] . $url['path'] . '?' . http_build_query($params);
-    $iframeOpts = array_merge($this->_iframeOpts, $iframeOpts);
-    $iframeOpts['src'] = $src;
-    return $this->Html->tag('iframe', '', $iframeOpts);
+    return $url['scheme'] . '://' . $url['host'] . $url['path'] . '?' . http_build_query($params);
   }
 
 /**
@@ -156,7 +216,7 @@ class SoundcloudWidgetHelper extends AppHelper {
       if ($url === null) {
         throw new InvalidArgumentException("Invalid URL");
       }
-      if (!empty($this->_ch))
+      if(gettype($this->_ch) == 'resource')
       {
         curl_close($this->_ch);
       }
@@ -198,3 +258,4 @@ class SoundcloudWidgetHelper extends AppHelper {
   }
 
 }
+
